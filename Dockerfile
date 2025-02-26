@@ -1,24 +1,24 @@
-#Grab the latest alpine image
-FROM python:3.13.0a2-alpine
+# Utilisation de l'image Python basée sur Debian
+FROM python:3.13-slim
 
-# Install python and pip
-RUN apk add --no-cache --update python3 py3-pip bash
+# Définir l'encodage pour éviter les erreurs de locale
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Installer bash et autres dépendances si nécessaire
+RUN apt-get update && apt-get install -y bash && rm -rf /var/lib/apt/lists/*
+
+# Copier les dépendances et les installer
 ADD ./webapp/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -q -r /tmp/requirements.txt
 
-# Install dependencies
-RUN pip3 install --no-cache-dir -q -r /tmp/requirements.txt
-
-# Add our code
+# Copier le code de l'application
 ADD ./webapp /opt/webapp/
 WORKDIR /opt/webapp
 
-# Expose is NOT supported by Heroku
-# EXPOSE 5000 		
-
-# Run the image as a non-root user
-RUN adduser -D myuser
+# Créer un utilisateur non-root et l'utiliser
+RUN useradd -m myuser
 USER myuser
 
-# Run the app.  CMD is required to run on Heroku
-# $PORT is set by Heroku			
-CMD gunicorn --bind 0.0.0.0:$PORT wsgi
+# Définir la commande de lancement
+CMD gunicorn --bind 0.0.0.0:${PORT:-5000} wsgi
